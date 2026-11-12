@@ -83,3 +83,9 @@ export const DEFAULT_PLANS={
  'Year 9':[P('p4','u5',0,4,'M. Lee',[{name:'Ecosystems Research Task',type:'Research Task',role:'Support',week:4}],[])],
 }
 export const buildWeeks=terms=>{const w=[];terms.forEach((t,ti)=>{for(let i=1;i<=t.weeks;i++)w.push({gi:w.length,term:ti,w:i,block:t.blocks?.[i]||null})});return w}
+
+export const LEVELS=['Levels 7 & 8','Levels 9 & 10']
+export const AREAS=['Biological sciences','Chemical sciences','Earth and space sciences','Physical sciences','Science as a Human Endeavour','Science Inquiry']
+export const levelOf=code=>code.startsWith('VC2S10')?LEVELS[1]:LEVELS[0]
+const A={Biology:AREAS[0],Chemistry:AREAS[1],'Earth & Space':AREAS[2],Physics:AREAS[3]}
+export const areaOf=c=>c.strand==='Human Endeavour'?AREAS[4]:c.strand==='Inquiry'?AREAS[5]:A[c.disc]
