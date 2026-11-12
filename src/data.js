@@ -60,10 +60,10 @@ export const CURRICULUM = [
 ].map(([code,strand,disc,text])=>({code,strand,disc,text}))
 
 export const DEFAULT_TERMS=[
- {name:'Term 1',weeks:11,blocks:{6:'Step-Up'}},
- {name:'Term 2',weeks:10,blocks:{9:'Camp'}},
- {name:'Term 3',weeks:10,blocks:{10:'Exams'}},
- {name:'Term 4',weeks:9,blocks:{}},
+ {id:'t1',name:'Term 1',weeks:11,blocks:{6:'Step-Up'}},
+ {id:'t2',name:'Term 2',weeks:10,blocks:{9:'Camp'}},
+ {id:'t3',name:'Term 3',weeks:10,blocks:{10:'Exams'}},
+ {id:'t4',name:'Term 4',weeks:9,blocks:{}},
 ]
 export const DEFAULT_UNITS=[
  {id:'u1',name:'Mixtures',disc:'Chemistry',weeks:4,codes:['VC2S8U06']},
@@ -82,10 +82,16 @@ export const DEFAULT_PLANS={
  'Year 8':[P('p3','u4',0,4,'R. Patel',[{name:'Energy Test',type:'Test',role:'Creator',week:4}],[{name:'Excursion: Scienceworks',week:2}])],
  'Year 9':[P('p4','u5',0,4,'M. Lee',[{name:'Ecosystems Research Task',type:'Research Task',role:'Support',week:4}],[])],
 }
-export const buildWeeks=terms=>{const w=[];terms.forEach((t,ti)=>{for(let i=1;i<=t.weeks;i++)w.push({gi:w.length,term:ti,w:i,block:t.blocks?.[i]||null})});return w}
+export const buildWeeks=terms=>{const w=[];terms.forEach((t,ti)=>{for(let i=1;i<=t.weeks;i++)w.push({gi:w.length,term:ti,w:i,block:t.blocks?.[i]||null,tid:t.id??ti})});return w}
 
 export const LEVELS=['Levels 7 & 8','Levels 9 & 10']
 export const AREAS=['Biological sciences','Chemical sciences','Earth and space sciences','Physical sciences','Science as a Human Endeavour','Science Inquiry']
 export const levelOf=code=>code.startsWith('VC2S10')?LEVELS[1]:LEVELS[0]
 const A={Biology:AREAS[0],Chemistry:AREAS[1],'Earth & Space':AREAS[2],Physics:AREAS[3]}
 export const areaOf=c=>c.strand==='Human Endeavour'?AREAS[4]:c.strand==='Inquiry'?AREAS[5]:A[c.disc]
+
+// Keep a unit in the same term/week when terms are added, removed or reordered
+export const remap=(oldW,newW,p)=>{const f=gi=>{const o=oldW[Math.min(gi,oldW.length-1)];if(!o)return -1
+  const m=newW.filter(x=>x.tid===o.tid);if(!m.length)return -1;return (m.find(x=>x.w===o.w)||m[m.length-1]).gi}
+  let s=f(p.start),e=f(p.start+p.len-1);if(s<0)s=Math.min(p.start,newW.length-1);if(e<s)e=Math.min(s+p.len-1,newW.length-1)
+  return {...p,start:s,len:Math.max(1,e-s+1)}}

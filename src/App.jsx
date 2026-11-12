@@ -1,6 +1,6 @@
 import {useState,useMemo} from 'react'
 import {Settings,PanelLeft} from 'lucide-react'
-import {DEFAULT_TERMS,DEFAULT_UNITS,DEFAULT_PLANS,buildWeeks} from './data.js'
+import {DEFAULT_TERMS,DEFAULT_UNITS,DEFAULT_PLANS,buildWeeks,remap} from './data.js'
 import UnitSidebar from './components/UnitSidebar.jsx'
 import TimelineGrid from './components/TimelineGrid.jsx'
 import TermConfigModal from './components/TermConfigModal.jsx'
@@ -36,7 +36,7 @@ export default function App(){
         <TimelineGrid weeks={weeks} terms={terms} rows={rows} units={units} onAdd={add} onUpdate={update} onOpen={setOpenId}/>
       </main>
     </div>
-    {showCfg&&<TermConfigModal terms={terms} onSave={t=>{setState(s=>({...s,terms:t}));setShowCfg(false)}} onClose={()=>setShowCfg(false)}/>}
+    {showCfg&&<TermConfigModal terms={terms} onSave={t=>{const nw=buildWeeks(t);setState(s=>({...s,terms:t,rows:s.rows.map(p=>remap(weeks,nw,p))}));setShowCfg(false)}} onClose={()=>setShowCfg(false)}/>}
     {open&&<UnitModal p={open} unit={units.find(u=>u.id===open.unitId)} weeks={weeks} onChange={patch=>update(open.id,patch)} onDelete={()=>remove(open.id)} onClose={()=>setOpenId(null)}/>}
   </div>)
 }
