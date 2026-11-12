@@ -1,8 +1,9 @@
 import {useState} from 'react'
-import {X,Trash2,Plus} from 'lucide-react'
-import {CURRICULUM,CAT_TYPES,ROLES,DISC} from '../data.js'
+import {X,Trash2,Plus,ChevronRight,ChevronDown} from 'lucide-react'
+import {CURRICULUM,CAT_TYPES,ROLES,DISC,LEVELS,AREAS,levelOf,areaOf} from '../data.js'
 export default function UnitModal({p,unit,weeks,onChange,onDelete,onClose}){
   const [q,setQ]=useState('')
+  const [open,setOpen]=useState({})
   const codes=p.codes??unit.codes
   const toggle=c=>onChange({codes:codes.includes(c)?codes.filter(x=>x!==c):[...codes,c]})
   const edit=(key,i,patch)=>onChange({[key]:p[key].map((x,j)=>j===i?{...x,...patch}:x)})
@@ -10,6 +11,7 @@ export default function UnitModal({p,unit,weeks,onChange,onDelete,onClose}){
   const maxW=p.len,wopts=Array.from({length:maxW},(_,i)=>i+1)
   const inp="border rounded px-1.5 py-1"
   const list=CURRICULUM.filter(c=>(c.code+c.text+c.disc+c.strand).toLowerCase().includes(q.toLowerCase()))
+  const tree=LEVELS.map(lv=>[lv,AREAS.map(a=>[a,list.filter(c=>levelOf(c.code)===lv&&areaOf(c)===a)]).filter(x=>x[1].length)]).filter(x=>x[1].length)
   const WeekSel=({v,on})=><select value={v} onChange={e=>on(+e.target.value)} className={inp}>{wopts.map(w=><option key={w} value={w}>Wk {w}</option>)}</select>
   return(<div className="fixed inset-0 bg-black/40 flex justify-end z-50"><div className="bg-white w-[560px] h-full overflow-y-auto p-5 shadow-xl">
     <div className="flex items-center mb-3"><h2 className="font-semibold text-base flex-1" style={{color:DISC[unit.disc].fg}}>{unit.name} <span className="text-xs text-slate-500">({unit.disc}, {p.len} wks)</span></h2>
@@ -27,6 +29,14 @@ export default function UnitModal({p,unit,weeks,onChange,onDelete,onClose}){
     <button onClick={()=>onChange({miles:[...p.miles,{name:'Workbook check',week:1}]})} className="flex items-center gap-1 text-sky-700 mb-4"><Plus size={14}/>Add milestone</button>
     <h3 className="font-semibold mb-1">Victorian Curriculum 2.0 codes <span className="font-normal text-slate-500">({codes.length} selected)</span></h3>
     <input value={q} onChange={e=>setQ(e.target.value)} placeholder="Search code, topic or discipline…" className={`${inp} w-full mb-2`}/>
-    <div className="border rounded max-h-72 overflow-y-auto">{list.map(c=><label key={c.code} className="flex gap-2 px-2 py-1 border-b hover:bg-slate-50 cursor-pointer">
-      <input type="checkbox" checked={codes.includes(c.code)} onChange={()=>toggle(c.code)}/><span className="font-mono text-xs w-24 shrink-0">{c.code}</span><span className="text-xs">{c.text}</span></label>)}</div>
+    <div className="border rounded max-h-96 overflow-y-auto">{tree.map(([lv,areas])=>{const lk=lv;const lc=areas.flatMap(x=>x[1])
+      const lo=q||open[lk]
+      return <div key={lv}><button onClick={()=>setOpen(o=>({...o,[lk]:!o[lk]}))} className="w-full flex items-center gap-1 px-2 py-1.5 bg-slate-100 font-semibold border-b text-left">
+        {lo?<ChevronDown size={14}/>:<ChevronRight size={14}/>}{lv}<span className="ml-auto text-xs font-normal text-slate-500">{lc.filter(c=>codes.includes(c.code)).length}/{lc.length}</span></button>
+        {lo&&areas.map(([area,items])=>{const ak=lv+area;const ao=q||open[ak]
+          return <div key={ak}><button onClick={()=>setOpen(o=>({...o,[ak]:!o[ak]}))} className="w-full flex items-center gap-1 pl-5 pr-2 py-1 bg-slate-50 border-b text-left">
+            {ao?<ChevronDown size={12}/>:<ChevronRight size={12}/>}{area}<span className="ml-auto text-xs text-slate-500">{items.filter(c=>codes.includes(c.code)).length}/{items.length}</span></button>
+            {ao&&items.map(c=><label key={c.code} className="flex gap-2 pl-9 pr-2 py-1 border-b hover:bg-slate-50 cursor-pointer">
+              <input type="checkbox" checked={codes.includes(c.code)} onChange={()=>toggle(c.code)}/><span className="font-mono text-xs w-24 shrink-0">{c.code}</span><span className="text-xs">{c.text}</span></label>)}</div>})}</div>})}
+      {!tree.length&&<div className="p-3 text-slate-500">No matching codes.</div>}</div>
   </div></div>)}
