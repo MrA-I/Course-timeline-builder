@@ -1,4 +1,4 @@
-import {defineConfig} from 'vite'
+import {base: 'Course-timeline-builder'} from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 export default defineConfig({plugins:[react(),tailwindcss()]})
