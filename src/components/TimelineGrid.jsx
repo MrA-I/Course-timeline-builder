@@ -18,31 +18,33 @@ export default function TimelineGrid({weeks,terms,rows,units,onAdd,onUpdate,onOp
   // Pack non-overlapping units onto shared lanes so a year's sequence reads on one line
   const laneEnd=[],lane={}
   ;[...rows].sort((x,y)=>x.start-y.start).forEach(p=>{let i=laneEnd.findIndex(e=>e<=p.start);if(i<0){i=laneEnd.length;laneEnd.push(0)}laneEnd[i]=p.start+p.len;lane[p.id]=i})
-  const L=laneEnd.length+1 // +1 spare lane for dropping
-  const catsBy=Array.from({length:L},()=>[])
-  rows.forEach(p=>{const u=units.find(x=>x.id===p.unitId);if(u)p.cats.forEach(t=>catsBy[lane[p.id]].push({col:p.start+t.week+1,t,p,u}))})
-  const subOf=new Map(),subCount=[],start=[];let rr=3
-  catsBy.forEach((cs,i)=>{const ends=[];cs.sort((x,y)=>x.col-y.col).forEach(k=>{k.span=Math.max(1,Math.min(3,N+2-k.col))
-      let j=ends.findIndex(e=>e<=k.col);if(j<0){j=ends.length;ends.push(0)};ends[j]=k.col+k.span;k.sub=j})
-    subCount[i]=ends.length;start[i]=rr;rr+=1+ends.length})
+  const L=Math.max(1,laneEnd.length)
+  const mk=key=>{const items=[];rows.forEach(p=>{const u=units.find(x=>x.id===p.unitId);if(u)p[key].forEach(t=>items.push({col:p.start+t.week+1,t,p,u}))})
+    const ends=[];items.sort((x,y)=>x.col-y.col).forEach(k=>{k.span=Math.max(1,Math.min(3,N+2-k.col));let j=ends.findIndex(e=>e<=k.col);if(j<0){j=ends.length;ends.push(0)};ends[j]=k.col+k.span;k.sub=j})
+    return {items,n:Math.max(1,ends.length)}}
+  const cats=mk('cats'),miles=mk('miles'),catStart=3+L,mileStart=catStart+cats.n
+  const defs=[]
+  for(let i=0;i<L;i++)defs.push([3+i,i===0?'Unit sequence':'Overlapping unit',true])
+  for(let k=0;k<cats.n;k++)defs.push([catStart+k,k?'':'CATs',false])
+  for(let k=0;k<miles.n;k++)defs.push([mileStart+k,k?'':'Homework / milestones',false])
   const out=[]
-  for(let i=0;i<L;i++){
-    for(let k=0;k<=subCount[i];k++){const row=start[i]+k
-      out.push(<div key={'l'+i+'_'+k} style={{gridRow:row,gridColumn:1}} className={`${cell} px-2 flex items-center bg-slate-50 text-xs text-slate-500 ${k?'italic':''}`}>{k?'CATs':i===0?'Unit sequence':i<L-1?'Parallel / overlap':'Spare lane'}</div>)
-      weeks.forEach(w=>out.push(<div key={'c'+i+'_'+k+'_'+w.gi} style={{gridRow:row,gridColumn:w.gi+2}} className={`${cell} ${k?'h-6':'h-9'} ${bg(w)}`}
-        onDragOver={k?undefined:e=>!w.block&&e.preventDefault()} onDrop={k?undefined:e=>{e.preventDefault();const id=e.dataTransfer.getData('unit');if(id&&!w.block)onAdd(id,w.gi)}}/>))}}
+  defs.forEach(([row,label,isUnit])=>{
+    const top=row===catStart||row===mileStart?'border-t-2 border-t-slate-400':''
+    out.push(<div key={'l'+row} style={{gridRow:row,gridColumn:1}} className={`${cell} ${top} px-2 flex items-center bg-slate-50 text-xs ${isUnit?'text-slate-500':'font-semibold text-slate-700'}`}>{label}</div>)
+    weeks.forEach(w=>out.push(<div key={'c'+row+'_'+w.gi} style={{gridRow:row,gridColumn:w.gi+2}} className={`${cell} ${top} ${isUnit?'h-9':'h-6'} ${bg(w)}`}
+      onDragOver={isUnit?e=>!w.block&&e.preventDefault():undefined} onDrop={isUnit?e=>{e.preventDefault();const id=e.dataTransfer.getData('unit');if(id&&!w.block)onAdd(id,w.gi)}:undefined}/>))})
   rows.forEach(p=>{
-    const u=units.find(x=>x.id===p.unitId);if(!u)return;const c=DISC[u.disc];const row=start[lane[p.id]]
-    out.push(<div key={p.id+'bar'} onClick={()=>onOpen(p.id)} title={`${u.name} \u2022 ${p.staff||'Unassigned'}`} style={{gridRow:row,gridColumn:`${p.start+2} / span ${p.len}`,background:c.bg,color:c.fg,borderColor:c.fg}}
+    const u=units.find(x=>x.id===p.unitId);if(!u)return;const c=DISC[u.disc]
+    out.push(<div key={p.id+'bar'} onClick={()=>onOpen(p.id)} title={`${u.name} \u2022 ${p.staff||'Unassigned'}`} style={{gridRow:3+lane[p.id],gridColumn:`${p.start+2} / span ${p.len}`,background:c.bg,color:c.fg,borderColor:c.fg}}
       className="relative m-0.5 rounded border cursor-pointer flex items-center px-3 text-xs font-medium overflow-hidden whitespace-nowrap z-10">
       <span className="truncate">{u.name}{p.staff?` \u00b7 ${p.staff}`:''}</span>
       {['l','r'].map(e=><span key={e} onMouseDown={ev=>{ev.stopPropagation();setRs({id:p.id,edge:e,x0:ev.clientX,start:p.start,len:p.len})}}
-        className={`absolute top-0 bottom-0 w-2 cursor-ew-resize hover:bg-black/20 ${e==='l'?'left-0':'right-0'}`}/>)}</div>)
-    p.miles.forEach((t,k)=>out.push(<div key={p.id+'m'+k} title={t.name} onClick={()=>onOpen(p.id)}
-      style={{gridRow:row,gridColumn:t.week+p.start+1}} className="z-20 self-start justify-self-start mt-0.5 ml-0.5 w-2.5 h-2.5 rounded-full bg-orange-400 cursor-pointer"/>))})
-  catsBy.forEach((cs,i)=>cs.forEach((k,n)=>out.push(<div key={'cat'+i+'_'+n} onClick={()=>onOpen(k.p.id)} title={`${k.u.name}: ${k.t.name} (${k.t.type}, ${k.t.role})`}
-    style={{gridRow:start[i]+1+k.sub,gridColumn:`${k.col} / span ${k.span}`,background:DISC[k.u.disc].fg}}
-    className="z-20 m-0.5 rounded text-white text-[10px] px-1 flex items-center truncate whitespace-nowrap cursor-pointer">{k.t.name}</div>)))
+        className={`absolute top-0 bottom-0 w-2 cursor-ew-resize hover:bg-black/20 ${e==='l'?'left-0':'right-0'}`}/>)}</div>)})
+  const chip=(group,start,milestone)=>group.items.forEach((k,n)=>out.push(<div key={(milestone?'m':'c')+n} onClick={()=>onOpen(k.p.id)}
+    title={`${k.u.name}: ${k.t.name}${milestone?'':` (${k.t.type}, ${k.t.role})`}`}
+    style={{gridRow:start+k.sub,gridColumn:`${k.col} / span ${k.span}`,background:milestone?'#f59e0b':DISC[k.u.disc].fg}}
+    className="z-20 m-0.5 rounded text-white text-[10px] px-1 flex items-center truncate whitespace-nowrap cursor-pointer">{k.t.name}</div>))
+  chip(cats,catStart,false);chip(miles,mileStart,true)
   return(<div className="inline-grid border-t border-l border-slate-300 bg-white" style={{gridTemplateColumns:cols}}>
     <div style={{gridRow:1,gridColumn:1}} className={`${cell} bg-slate-100 font-semibold px-2 flex items-center`}>Unit</div>
     <div style={{gridRow:2,gridColumn:1}} className={`${cell} bg-slate-100 text-xs px-2 flex items-center`}>Week</div>

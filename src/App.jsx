@@ -8,15 +8,13 @@ import UnitModal from './components/UnitModal.jsx'
 import ExportManager from './components/ExportManager.jsx'
 
 export default function App(){
-  const [state,setState]=useState({terms:DEFAULT_TERMS,units:DEFAULT_UNITS,plans:DEFAULT_PLANS})
-  const [year,setYear]=useState('Year 7')
+  const [state,setState]=useState({title:'Year 7 Science Rotation',terms:DEFAULT_TERMS,units:DEFAULT_UNITS,rows:DEFAULT_PLANS['Year 7']})
   const [showBank,setShowBank]=useState(true)
   const [showCfg,setShowCfg]=useState(false)
   const [openId,setOpenId]=useState(null)
-  const {terms,units,plans}=state
+  const {terms,units,rows,title}=state
   const weeks=useMemo(()=>buildWeeks(terms),[terms])
-  const rows=plans[year]||[]
-  const setRows=fn=>setState(s=>({...s,plans:{...s.plans,[year]:fn(s.plans[year]||[])}}))
+  const setRows=fn=>setState(s=>({...s,rows:fn(s.rows)}))
   const add=(unitId,start)=>{const u=units.find(x=>x.id===unitId);const len=Math.min(u.weeks,weeks.length-start)
     setRows(r=>[...r,{id:'p'+Date.now(),unitId,start,len,staff:'',cats:[],miles:[],codes:null}])}
   const update=(id,patch)=>setRows(r=>r.map(p=>p.id===id?{...p,...patch}:p))
@@ -26,9 +24,8 @@ export default function App(){
   <div className="h-screen flex flex-col text-sm text-slate-800">
     <header className="flex items-center gap-3 px-4 py-2 bg-white border-b">
       <button onClick={()=>setShowBank(v=>!v)} title={showBank?"Hide unit bank":"Show unit bank"} className="p-1.5 rounded bg-slate-100 hover:bg-slate-200"><PanelLeft size={16}/></button>
-      <h1 className="font-semibold text-base">Curriculum Timeline Builder</h1>
-      <div className="flex gap-1 ml-4">{Object.keys(plans).map(y=>
-        <button key={y} onClick={()=>setYear(y)} className={`px-3 py-1 rounded ${y===year?'bg-slate-800 text-white':'bg-slate-100 hover:bg-slate-200'}`}>{y}</button>)}</div>
+      
+      <input value={title} onChange={e=>setState(s=>({...s,title:e.target.value}))} placeholder="Enter timeline title…" className="ml-4 w-80 border rounded px-2 py-1 font-medium"/>
       <div className="flex-1"/>
       <button onClick={()=>setShowCfg(true)} className="flex items-center gap-1 px-3 py-1 rounded bg-slate-100 hover:bg-slate-200"><Settings size={14}/>Terms</button>
       <ExportManager state={state} setState={setState} weeks={weeks}/>
